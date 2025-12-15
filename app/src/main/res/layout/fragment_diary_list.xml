@@ -1,12 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:padding="20dp">
+    android:layout_height="match_parent">
 
-    <TextView
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvDiary"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="12dp"
+        android:clipToPadding="false"/>
+
+    <!-- 空状态 -->
+    <LinearLayout
+        android:id="@+id/emptyState"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="今天也值得被记录 ✨"
+            android:textSize="18sp"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="点右下角 + 写第一篇日记"
+            android:textSize="14sp"/>
+    </LinearLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAdd"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="日记（列表页骨架）"
-        android:textSize="22sp" />
-</FrameLayout>
+        android:contentDescription="Add"
+        app:srcCompat="@android:drawable/ic_input_add"
+        app:layout_anchorGravity="bottom|end"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="18dp"/>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
