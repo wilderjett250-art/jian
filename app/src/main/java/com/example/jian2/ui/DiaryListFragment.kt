@@ -5,13 +5,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.jian2.R
 import com.example.jian2.ui.diary.DiaryListAdapter
 import com.example.jian2.ui.diary.DiaryUiModel
+import com.example.jian2.ui.diary.detail.DiaryDetailFragment
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class DiaryListFragment : Fragment() {
@@ -22,8 +22,7 @@ class DiaryListFragment : Fragment() {
 
     private val adapter by lazy {
         DiaryListAdapter { item ->
-            Toast.makeText(requireContext(), "点了：${item.title}", Toast.LENGTH_SHORT).show()
-            // 下一次 commit 再做：跳转到详情页
+            openDetail(item)
         }
     }
 
@@ -46,14 +45,36 @@ class DiaryListFragment : Fragment() {
         rvDiary.adapter = adapter
 
         fabAdd.setOnClickListener {
-            Toast.makeText(requireContext(), "下一步：进入写日记页（下次提交实现）", Toast.LENGTH_SHORT).show()
+            // commit7 你说做“可点击详情”，这里先不做新增页
+            // 下一次再实现写日记页
         }
 
-        // 先用假数据占位（后面接 Room）
+        // ✅ 假数据：用你真实字段名 contentPreview / dateText
         val mock = listOf(
-            DiaryUiModel(1, "第一篇日记", "今天把项目跑通了，开始做日记本应用。", "2025-12-16", mood = 4, isPinned = true),
-            DiaryUiModel(2, "第二篇日记", "完成了列表骨架，下一步写新增页面。", "2025-12-16", mood = 3),
-            DiaryUiModel(3, "第三篇日记", "准备接入数据库。", "2025-12-16", mood = 5)
+            DiaryUiModel(
+                id = 1,
+                title = "第一篇日记",
+                contentPreview = "今天把项目跑通了，开始做日记本应用。",
+                dateText = "2025-12-16",
+                mood = 4,
+                isPinned = true
+            ),
+            DiaryUiModel(
+                id = 2,
+                title = "第二篇日记",
+                contentPreview = "完成了列表骨架，下一步写新增页面。",
+                dateText = "2025-12-16",
+                mood = 3,
+                isPinned = false
+            ),
+            DiaryUiModel(
+                id = 3,
+                title = "第三篇日记",
+                contentPreview = "准备接入数据库。",
+                dateText = "2025-12-16",
+                mood = 5,
+                isPinned = false
+            )
         )
 
         render(mock)
@@ -64,5 +85,18 @@ class DiaryListFragment : Fragment() {
         val isEmpty = list.isEmpty()
         emptyState.visibility = if (isEmpty) View.VISIBLE else View.GONE
         rvDiary.visibility = if (isEmpty) View.GONE else View.VISIBLE
+    }
+
+    private fun openDetail(item: DiaryUiModel) {
+        val fragment = DiaryDetailFragment.newInstance(
+            title = item.title,
+            content = item.contentPreview, // ✅ 这里用 contentPreview 代替 content
+            mood = item.mood
+        )
+
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, fragment)
+            .addToBackStack(null)
+            .commit()
     }
 }
