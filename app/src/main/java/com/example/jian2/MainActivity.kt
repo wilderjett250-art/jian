@@ -2,7 +2,7 @@ package com.example.jian2
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.fragment.app.Fragment
+import androidx.fragment.app.commit
 import com.example.jian2.ui.calendar.CalendarFragment
 import com.example.jian2.ui.diary.list.DiaryListFragment
 import com.example.jian2.ui.profile.ProfileFragment
@@ -17,23 +17,33 @@ class MainActivity : AppCompatActivity() {
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNav)
 
         if (savedInstanceState == null) {
-            switchFragment(DiaryListFragment())
-            bottomNav.selectedItemId = R.id.menu_diary
+            supportFragmentManager.commit {
+                replace(R.id.fragment_container, DiaryListFragment())
+            }
         }
 
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.menu_diary -> switchFragment(DiaryListFragment())
-                R.id.menu_calendar -> switchFragment(CalendarFragment())
-                R.id.menu_profile -> switchFragment(ProfileFragment())
+                R.id.menu_diary -> {
+                    supportFragmentManager.commit {
+                        replace(R.id.fragment_container, DiaryListFragment())
+                    }
+                    true
+                }
+                R.id.menu_calendar -> {
+                    supportFragmentManager.commit {
+                        replace(R.id.fragment_container, CalendarFragment())
+                    }
+                    true
+                }
+                R.id.menu_profile -> {
+                    supportFragmentManager.commit {
+                        replace(R.id.fragment_container, ProfileFragment())
+                    }
+                    true
+                }
+                else -> false
             }
-            true
         }
-    }
-
-    private fun switchFragment(fragment: Fragment) {
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, fragment)
-            .commit()
     }
 }

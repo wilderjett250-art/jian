@@ -5,13 +5,22 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
-import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.jian2.R
+import com.example.jian2.ui.diary.DiaryViewModel
+import com.example.jian2.ui.diary.data.AppDatabase
+import com.example.jian2.ui.diary.data.DiaryEntity
 import com.example.jian2.ui.diary.detail.DiaryDetailFragment
+import com.example.jian2.ui.diary.write.WriteDiaryFragment
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class DiaryListFragment : Fragment() {
 
@@ -19,11 +28,17 @@ class DiaryListFragment : Fragment() {
     private lateinit var emptyState: LinearLayout
     private lateinit var fabAdd: FloatingActionButton
 
+    private val viewModel: DiaryViewModel by activityViewModels {
+        DiaryViewModel.Factory(AppDatabase.get(requireContext()).diaryDao())
+    }
+
     private val adapter by lazy {
         DiaryListAdapter { item ->
-            // 先把“能点进去”做出来，后面接 Room 再换成真实数据
             parentFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, DiaryDetailFragment.newInstance(item))
+                .replace(
+                    R.id.fragment_container,
+                    DiaryDetailFragment.newInstance(item.title, item.contentPreview)
+                )
                 .addToBackStack("diary_detail")
                 .commit()
         }
@@ -46,35 +61,18 @@ class DiaryListFragment : Fragment() {
         rvDiary.adapter = adapter
 
         fabAdd.setOnClickListener {
-            Toast.makeText(requireContext(), "下一步做：写日记页（后续 commit）", Toast.LENGTH_SHORT).show()
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, WriteDiaryFragment())
+                .addToBackStack("write_diary")
+                .commit()
         }
 
-        val mock = listOf(
-            DiaryUiModel(
-                id = 1,
-                title = "第一篇日记",
-                contentPreview = "今天把项目跑通了，开始做日记本应用。",
-                dateText = "2025-12-22",
-                mood = 4,
-                isPinned = true
-            ),
-            DiaryUiModel(
-                id = 2,
-                title = "第二篇日记",
-                contentPreview = "完成了列表骨架，下一步写新增页面。",
-                dateText = "2025-12-22",
-                mood = 3
-            ),
-            DiaryUiModel(
-                id = 3,
-                title = "第三篇日记",
-                contentPreview = "准备接入数据库。",
-                dateText = "2025-12-22",
-                mood = 5
-            )
-        )
-
-        render(mock)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.diaries.collect { entityList ->
+                val uiList = entityList.map { it.toUiModel() }
+                render(uiList)
+            }
+        }
     }
 
     private fun render(list: List<DiaryUiModel>) {
@@ -82,5 +80,17 @@ class DiaryListFragment : Fragment() {
         val isEmpty = list.isEmpty()
         emptyState.visibility = if (isEmpty) View.VISIBLE else View.GONE
         rvDiary.visibility = if (isEmpty) View.GONE else View.VISIBLE
+    }
+
+    private fun DiaryEntity.toUiModel(): DiaryUiModel {
+        val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(createdAt))
+        return DiaryUiModel(
+            id = id,
+            title = title,
+            contentPreview = content,
+            dateText = dateStr,
+            mood = mood,
+            isPinned = isPinned
+        )
     }
 }
