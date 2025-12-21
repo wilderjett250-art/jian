@@ -24,26 +24,17 @@ class MainActivity : AppCompatActivity() {
 
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.menu_diary -> {
-                    supportFragmentManager.commit {
-                        replace(R.id.fragment_container, DiaryListFragment())
-                    }
-                    true
+                R.id.menu_diary -> supportFragmentManager.commit {
+                    replace(R.id.fragment_container, DiaryListFragment())
                 }
-                R.id.menu_calendar -> {
-                    supportFragmentManager.commit {
-                        replace(R.id.fragment_container, CalendarFragment())
-                    }
-                    true
+                R.id.menu_calendar -> supportFragmentManager.commit {
+                    replace(R.id.fragment_container, CalendarFragment())
                 }
-                R.id.menu_profile -> {
-                    supportFragmentManager.commit {
-                        replace(R.id.fragment_container, ProfileFragment())
-                    }
-                    true
+                R.id.menu_profile -> supportFragmentManager.commit {
+                    replace(R.id.fragment_container, ProfileFragment())
                 }
-                else -> false
             }
+            true
         }
     }
 }

@@ -1,39 +1,32 @@
 package com.example.jian2.ui.diary
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.jian2.ui.diary.data.DiaryDao
+import com.example.jian2.ui.diary.data.AppDatabase
 import com.example.jian2.ui.diary.data.DiaryEntity
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
-class DiaryViewModel(private val dao: DiaryDao) : ViewModel() {
+class DiaryViewModel(application: Application) : AndroidViewModel(application) {
 
-    val diaries: StateFlow<List<DiaryEntity>> =
-        dao.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    private val dao = AppDatabase.get(application).diaryDao()
+
+    val diaries: Flow<List<DiaryEntity>> = dao.observeAll()
 
     fun addDiary(title: String, content: String, mood: Int) {
         viewModelScope.launch {
             dao.insert(
                 DiaryEntity(
-                    title = title,
-                    content = content,
+                    title = title.trim(),
+                    content = content.trim(),
                     mood = mood
                 )
             )
         }
     }
 
-    class Factory(private val dao: DiaryDao) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(DiaryViewModel::class.java)) {
-                @Suppress("UNCHECKED_CAST")
-                return DiaryViewModel(dao) as T
-            }
-            throw IllegalArgumentException("Unknown ViewModel class")
-        }
+    suspend fun getDiaryById(id: Long): DiaryEntity? {
+        return dao.getById(id)
     }
 }

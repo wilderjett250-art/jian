@@ -1,4 +1,4 @@
-package com.example.jian2.ui.diary.list
+package com.example.jian2.ui.diary
 
 data class DiaryUiModel(
     val id: Long,
@@ -6,5 +6,5 @@ data class DiaryUiModel(
     val contentPreview: String,
     val dateText: String,
     val mood: Int,
-    val isPinned: Boolean = false
+    val isPinned: Boolean
 )
