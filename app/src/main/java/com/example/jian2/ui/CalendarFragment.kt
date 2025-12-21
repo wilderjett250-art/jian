@@ -1,4 +1,4 @@
-package com.example.jian2.ui
+package com.example.jian2.ui.calendar
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -12,7 +12,5 @@ class CalendarFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View {
-        return inflater.inflate(R.layout.fragment_calendar, container, false)
-    }
+    ): View = inflater.inflate(R.layout.fragment_calendar, container, false)
 }

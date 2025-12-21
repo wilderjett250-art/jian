@@ -1,15 +1,12 @@
 package com.example.jian2
 
-
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import com.example.jian2.ui.calendar.CalendarFragment
+import com.example.jian2.ui.diary.list.DiaryListFragment
+import com.example.jian2.ui.profile.ProfileFragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.example.jian2.ui.DiaryListFragment
-import com.example.jian2.ui.CalendarFragment
-import com.example.jian2.ui.ProfileFragment
-
-
 
 class MainActivity : AppCompatActivity() {
 
@@ -17,19 +14,18 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_nav)
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNav)
 
-        // 默认页：日记
         if (savedInstanceState == null) {
             switchFragment(DiaryListFragment())
-            bottomNav.selectedItemId = R.id.nav_diary
+            bottomNav.selectedItemId = R.id.menu_diary
         }
 
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_diary -> switchFragment(DiaryListFragment())
-                R.id.nav_calendar -> switchFragment(CalendarFragment())
-                R.id.nav_profile -> switchFragment(ProfileFragment())
+                R.id.menu_diary -> switchFragment(DiaryListFragment())
+                R.id.menu_calendar -> switchFragment(CalendarFragment())
+                R.id.menu_profile -> switchFragment(ProfileFragment())
             }
             true
         }
