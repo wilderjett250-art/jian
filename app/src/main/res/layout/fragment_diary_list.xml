@@ -1,57 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- ✅ 新增：搜索入口 -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnGoSearch"
         style="?attr/materialButtonOutlinedStyle"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_margin="12dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="12dp"
         android:text="搜索日记"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
-    <LinearLayout
-        android:id="@+id/emptyState"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@id/btnGoSearch"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="今天也值得被记录" />
-    </LinearLayout>
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvDiary"
+        android:id="@+id/recyclerView"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:padding="12dp"
+        android:clipToPadding="false"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="96dp"
         app:layout_constraintTop_toBottomOf="@id/btnGoSearch"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/emptyState"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="还没有日记，点右下角 + 开始记录"
+        android:textSize="16sp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/btnGoSearch"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAdd"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:contentDescription="add"
-        android:src="@android:drawable/ic_input_add"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="20dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_margin="16dp"/>
+        app:srcCompat="@android:drawable/ic_input_add" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

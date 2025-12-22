@@ -18,50 +18,48 @@ class DiaryListAdapter(
     private val onClick: (DiaryEntity) -> Unit
 ) : ListAdapter<DiaryEntity, DiaryListAdapter.VH>(DIFF) {
 
-    class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val tvTitle: TextView = itemView.findViewById(R.id.tvTitle)
-        val tvPreview: TextView = itemView.findViewById(R.id.tvPreview)
-        val tvDate: TextView = itemView.findViewById(R.id.tvDate)
-        val tvMood: TextView = itemView.findViewById(R.id.tvMood)
-        val ivPin: ImageView = itemView.findViewById(R.id.ivPin)
-    }
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-        val v = LayoutInflater.from(parent.context).inflate(R.layout.item_diary, parent, false)
-        return VH(v)
-    }
-
-    override fun onBindViewHolder(holder: VH, position: Int) {
-        val item = getItem(position)
-
-        holder.tvTitle.text = item.title
-        holder.tvPreview.text = item.content.take(40).let { if (item.content.length > 40) "$it…" else it }
-        holder.tvDate.text = formatDate(item.createdAt)
-
-        // ✅ 关键点 3：心情 + 置顶 UI 绑定（你这里 mood 范围是 0~5）
-        holder.tvMood.text = "心情：${moodEmoji(item.mood)} ${item.mood}"
-        holder.ivPin.visibility = if (item.isPinned) View.VISIBLE else View.GONE
-
-        holder.itemView.setOnClickListener { onClick(item) }
-    }
-
-    private fun formatDate(ts: Long): String {
-        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        return sdf.format(Date(ts))
-    }
-
-    private fun moodEmoji(mood: Int): String = when (mood) {
-        5 -> "😄"
-        4 -> "🙂"
-        3 -> "😐"
-        2 -> "😕"
-        else -> "😭"
-    }
-
     companion object {
         private val DIFF = object : DiffUtil.ItemCallback<DiaryEntity>() {
             override fun areItemsTheSame(oldItem: DiaryEntity, newItem: DiaryEntity) = oldItem.id == newItem.id
             override fun areContentsTheSame(oldItem: DiaryEntity, newItem: DiaryEntity) = oldItem == newItem
         }
+
+        private val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+
+        private fun moodEmoji(m: Int): String = when {
+            m >= 85 -> "😄"
+            m >= 70 -> "🙂"
+            m >= 55 -> "😐"
+            m >= 40 -> "😕"
+            else -> "😭"
+        }
+    }
+
+    inner class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val tvTitle: TextView = itemView.findViewById(R.id.tvTitle)
+        private val tvPreview: TextView = itemView.findViewById(R.id.tvPreview)
+        private val tvDate: TextView = itemView.findViewById(R.id.tvDate)
+        private val tvMood: TextView = itemView.findViewById(R.id.tvMood)
+        private val ivPin: ImageView = itemView.findViewById(R.id.ivPin)
+
+        fun bind(item: DiaryEntity) {
+            tvTitle.text = item.title.ifBlank { "(无标题)" }
+            tvPreview.text = item.content.take(40).let { if (item.content.length > 40) "$it…" else it }
+            tvDate.text = sdf.format(Date(item.createdAt))
+
+            tvMood.text = "心情：${moodEmoji(item.mood)} ${item.mood}"
+            ivPin.visibility = if (item.isPinned) View.VISIBLE else View.GONE
+
+            itemView.setOnClickListener { onClick(item) }
+        }
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_diary, parent, false)
+        return VH(view)
+    }
+
+    override fun onBindViewHolder(holder: VH, position: Int) {
+        holder.bind(getItem(position))
     }
 }
