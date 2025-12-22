@@ -28,4 +28,12 @@ interface DiaryDao {
 
     @Query("SELECT * FROM diary WHERE title LIKE :kw OR content LIKE :kw ORDER BY isPinned DESC, createdAt DESC")
     suspend fun search(kw: String): List<DiaryEntity>
+
+    // ✅ 新增：按时间范围取日记（用于“按天筛选”）
+    @Query("""
+        SELECT * FROM diary 
+        WHERE createdAt >= :startMillis AND createdAt < :endMillis
+        ORDER BY isPinned DESC, createdAt DESC
+    """)
+    suspend fun getByDateRange(startMillis: Long, endMillis: Long): List<DiaryEntity>
 }

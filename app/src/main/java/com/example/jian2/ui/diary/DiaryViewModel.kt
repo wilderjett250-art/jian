@@ -5,11 +5,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.jian2.ui.diary.data.AppDatabase
 import com.example.jian2.ui.diary.data.DiaryEntity
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class DiaryViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -21,14 +19,18 @@ class DiaryViewModel(application: Application) : AndroidViewModel(application) {
     private val _editing = MutableStateFlow<DiaryEntity?>(null)
     val editing: StateFlow<DiaryEntity?> = _editing
 
+    // ✅ 新增：日历页“当天日记列表”
+    private val _dayDiaries = MutableStateFlow<List<DiaryEntity>>(emptyList())
+    val dayDiaries: StateFlow<List<DiaryEntity>> = _dayDiaries
+
     fun loadDiaries() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             _diaries.value = dao.getAll()
         }
     }
 
     fun loadDiaryById(id: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             _editing.value = dao.getById(id)
         }
     }
@@ -38,7 +40,7 @@ class DiaryViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun addDiary(title: String, content: String, mood: Int) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             dao.insert(
                 DiaryEntity(
                     title = title,
@@ -46,35 +48,12 @@ class DiaryViewModel(application: Application) : AndroidViewModel(application) {
                     mood = mood
                 )
             )
-            _diaries.value = dao.getAll()
+            loadDiaries()
         }
     }
 
-    /**
-     * ✅ 兼容你现在 Fragment 调用的 4 参数版本：updateDiary(id, title, content, mood)
-     * 自动保留原来的 createdAt / isPinned
-     */
-    fun updateDiary(id: Long, title: String, content: String, mood: Int) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val old = dao.getById(id) ?: return@launch
-            dao.update(
-                old.copy(
-                    title = title,
-                    content = content,
-                    mood = mood,
-                    updatedAt = System.currentTimeMillis()
-                )
-            )
-            _diaries.value = dao.getAll()
-            _editing.value = dao.getById(id)
-        }
-    }
-
-    /**
-     * ✅ 如果你项目里还有地方用旧签名，也不会炸（可保留）
-     */
     fun updateDiary(id: Long, title: String, content: String, mood: Int, isPinned: Boolean, createdAt: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             dao.update(
                 DiaryEntity(
                     id = id,
@@ -86,36 +65,51 @@ class DiaryViewModel(application: Application) : AndroidViewModel(application) {
                     isPinned = isPinned
                 )
             )
-            _diaries.value = dao.getAll()
-            _editing.value = dao.getById(id)
+            loadDiaries()
+        }
+    }
+    // ✅ 兼容旧调用：只传 4 个参数也能更新（自动从数据库取 isPinned / createdAt）
+    fun updateDiary(id: Long, title: String, content: String, mood: Int) {
+        viewModelScope.launch {
+            val old = dao.getById(id) ?: return@launch
+            updateDiary(
+                id = old.id,
+                title = title,
+                content = content,
+                mood = mood,
+                isPinned = old.isPinned,
+                createdAt = old.createdAt
+            )
         }
     }
 
+
     fun deleteDiary(id: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             dao.deleteById(id)
-            _diaries.value = dao.getAll()
-            if (_editing.value?.id == id) _editing.value = null
+            loadDiaries()
         }
     }
 
     fun setPinned(id: Long, pinned: Boolean) {
-        viewModelScope.launch(Dispatchers.IO) {
-            dao.setPinned(id, pinned) // DAO 里 updatedAt 有默认值
-            _diaries.value = dao.getAll()
-            if (_editing.value?.id == id) {
-                _editing.value = dao.getById(id)
-            }
+        viewModelScope.launch {
+            dao.setPinned(id, pinned)
+            loadDiaries()
         }
     }
 
     fun search(keyword: String, onResult: (List<DiaryEntity>) -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             val kw = "%${keyword.trim()}%"
-            val result = dao.search(kw)
-            withContext(Dispatchers.Main) {
-                onResult(result)
-            }
+            onResult(dao.search(kw))
+        }
+    }
+
+    // ✅ 新增：给日历页用——加载某一天的日记（dayStartMillis=当天 00:00）
+    fun loadDiariesForDay(dayStartMillis: Long) {
+        viewModelScope.launch {
+            val oneDay = 24L * 60L * 60L * 1000L
+            _dayDiaries.value = dao.getByDateRange(dayStartMillis, dayStartMillis + oneDay)
         }
     }
 }

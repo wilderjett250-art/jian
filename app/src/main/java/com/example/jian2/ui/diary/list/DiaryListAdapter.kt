@@ -26,14 +26,16 @@ class DiaryListAdapter(
 
         private val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
 
-        private fun moodEmoji(m: Int): String = when {
-            m >= 85 -> "😄"
-            m >= 70 -> "🙂"
-            m >= 55 -> "😐"
-            m >= 40 -> "😕"
-            else -> "😭"
+        private fun moodEmoji(m: Int): String = when (m) {
+            5 -> "😄"
+            4 -> "🙂"
+            3 -> "😐"
+            2 -> "😕"
+            else -> "😭"   // 0,1
         }
+
     }
+
 
     inner class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val tvTitle: TextView = itemView.findViewById(R.id.tvTitle)
