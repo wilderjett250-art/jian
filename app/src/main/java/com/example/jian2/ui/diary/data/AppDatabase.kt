@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [DiaryEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -23,7 +23,14 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "jian_diary.db"
-                ).build()
+                )
+                    // ✅ schema 不一致直接删库重建（避免启动闪退）
+                    .fallbackToDestructiveMigration()
+                    // ✅ 先止血：允许主线程查询（等稳定后再改回 IO）
+                    .allowMainThreadQueries()
+                    .build()
+
+
                 INSTANCE = db
                 db
             }

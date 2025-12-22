@@ -8,18 +8,18 @@ import com.example.jian2.ui.diary.data.DiaryEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-class DiaryViewModel(app: Application) : AndroidViewModel(app) {
+class DiaryViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val dao = AppDatabase.get(app).diaryDao()
+    private val dao = AppDatabase.get(application).diaryDao()
 
     private val _diaries = MutableStateFlow<List<DiaryEntity>>(emptyList())
-    val diaries: StateFlow<List<DiaryEntity>> = _diaries.asStateFlow()
+    val diaries: StateFlow<List<DiaryEntity>> = _diaries
 
     private val _editing = MutableStateFlow<DiaryEntity?>(null)
-    val editing: StateFlow<DiaryEntity?> = _editing.asStateFlow()
+    val editing: StateFlow<DiaryEntity?> = _editing
 
     fun loadDiaries() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -33,37 +33,60 @@ class DiaryViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun clearEditing() {
+        _editing.value = null
+    }
+
     fun addDiary(title: String, content: String, mood: Int) {
         viewModelScope.launch(Dispatchers.IO) {
-            val now = System.currentTimeMillis()
             dao.insert(
                 DiaryEntity(
-                    id = 0L,
                     title = title,
                     content = content,
-                    mood = mood,
-                    createdAt = now,
-                    updatedAt = now,
-                    isPinned = false
+                    mood = mood
                 )
             )
-            loadDiaries()
+            _diaries.value = dao.getAll()
         }
     }
 
+    /**
+     * ✅ 兼容你现在 Fragment 调用的 4 参数版本：updateDiary(id, title, content, mood)
+     * 自动保留原来的 createdAt / isPinned
+     */
     fun updateDiary(id: Long, title: String, content: String, mood: Int) {
         viewModelScope.launch(Dispatchers.IO) {
             val old = dao.getById(id) ?: return@launch
-            val now = System.currentTimeMillis()
             dao.update(
                 old.copy(
                     title = title,
                     content = content,
                     mood = mood,
-                    updatedAt = now
+                    updatedAt = System.currentTimeMillis()
                 )
             )
-            loadDiaries()
+            _diaries.value = dao.getAll()
+            _editing.value = dao.getById(id)
+        }
+    }
+
+    /**
+     * ✅ 如果你项目里还有地方用旧签名，也不会炸（可保留）
+     */
+    fun updateDiary(id: Long, title: String, content: String, mood: Int, isPinned: Boolean, createdAt: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            dao.update(
+                DiaryEntity(
+                    id = id,
+                    title = title,
+                    content = content,
+                    mood = mood,
+                    createdAt = createdAt,
+                    updatedAt = System.currentTimeMillis(),
+                    isPinned = isPinned
+                )
+            )
+            _diaries.value = dao.getAll()
             _editing.value = dao.getById(id)
         }
     }
@@ -71,27 +94,28 @@ class DiaryViewModel(app: Application) : AndroidViewModel(app) {
     fun deleteDiary(id: Long) {
         viewModelScope.launch(Dispatchers.IO) {
             dao.deleteById(id)
-            loadDiaries()
+            _diaries.value = dao.getAll()
             if (_editing.value?.id == id) _editing.value = null
         }
     }
 
     fun setPinned(id: Long, pinned: Boolean) {
-        viewModelScope.launch {
-            dao.setPinned(id, pinned)
-            loadDiaries()
-            // ✅ 如果当前正在详情页查看这一条，顺带刷新 editing
+        viewModelScope.launch(Dispatchers.IO) {
+            dao.setPinned(id, pinned) // DAO 里 updatedAt 有默认值
+            _diaries.value = dao.getAll()
             if (_editing.value?.id == id) {
                 _editing.value = dao.getById(id)
             }
         }
     }
 
-
     fun search(keyword: String, onResult: (List<DiaryEntity>) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
-            val result = dao.search(keyword)
-            viewModelScope.launch(Dispatchers.Main) { onResult(result) }
+            val kw = "%${keyword.trim()}%"
+            val result = dao.search(kw)
+            withContext(Dispatchers.Main) {
+                onResult(result)
+            }
         }
     }
 }
