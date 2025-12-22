@@ -7,6 +7,22 @@ import androidx.room.Update
 
 @Dao
 interface DiaryDao {
+    // ✅ 统计：总日记数
+    @Query("SELECT COUNT(*) FROM diary")
+    suspend fun countAll(): Int
+
+    // ✅ 统计：某段时间内日记数（用于“本月日记数”）
+    @Query("SELECT COUNT(*) FROM diary WHERE createdAt >= :startMillis AND createdAt < :endMillis")
+    suspend fun countByRange(startMillis: Long, endMillis: Long): Int
+
+    // ✅ 统计：某段时间内平均心情（为空时返回 null）
+    @Query("SELECT AVG(mood) FROM diary WHERE createdAt >= :startMillis AND createdAt < :endMillis")
+    suspend fun avgMoodByRange(startMillis: Long, endMillis: Long): Double?
+
+    // ✅ 导出：取最近 N 条
+    @Query("SELECT * FROM diary ORDER BY createdAt DESC LIMIT :limit")
+    suspend fun getRecent(limit: Int): List<DiaryEntity>
+
 
     @Query("SELECT * FROM diary ORDER BY isPinned DESC, createdAt DESC")
     suspend fun getAll(): List<DiaryEntity>
