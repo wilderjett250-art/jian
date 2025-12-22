@@ -1,37 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:padding="16dp"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <EditText
-        android:id="@+id/etTitle"
-        android:hint="标题"
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="16dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content">
 
-    <EditText
-        android:id="@+id/etContent"
-        android:hint="正文"
-        android:minLines="6"
-        android:gravity="top"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"/>
+        <EditText
+            android:id="@+id/etTitle"
+            android:hint="标题"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
 
-    <SeekBar
-        android:id="@+id/seekMood"
-        android:max="5"
-        android:progress="3"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"/>
+        <EditText
+            android:id="@+id/etContent"
+            android:hint="正文"
+            android:minLines="6"
+            android:gravity="top"
+            android:layout_marginTop="12dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnSave"
-        android:text="保存"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"/>
-</LinearLayout>
+        <TextView
+            android:id="@+id/tvMood"
+            android:text="心情：3"
+            android:layout_marginTop="12dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <SeekBar
+            android:id="@+id/seekMood"
+            android:max="5"
+            android:progress="3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSave"
+            android:text="保存"
+            android:layout_marginTop="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+</ScrollView>

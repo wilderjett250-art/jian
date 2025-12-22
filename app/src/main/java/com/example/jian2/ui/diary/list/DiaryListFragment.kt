@@ -14,6 +14,8 @@ import com.example.jian2.R
 import com.example.jian2.ui.diary.DiaryViewModel
 import com.example.jian2.ui.diary.detail.DiaryDetailFragment
 import com.example.jian2.ui.diary.write.WriteDiaryFragment
+import com.example.jian2.ui.search.SearchFragment
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
 
@@ -24,6 +26,7 @@ class DiaryListFragment : Fragment() {
     private lateinit var rvDiary: RecyclerView
     private lateinit var emptyState: LinearLayout
     private lateinit var fabAdd: FloatingActionButton
+    private lateinit var btnGoSearch: MaterialButton
 
     private val adapter = DiaryListAdapter { entity ->
         parentFragmentManager.beginTransaction()
@@ -44,14 +47,26 @@ class DiaryListFragment : Fragment() {
         rvDiary = view.findViewById(R.id.rvDiary)
         emptyState = view.findViewById(R.id.emptyState)
         fabAdd = view.findViewById(R.id.fabAdd)
+        btnGoSearch = view.findViewById(R.id.btnGoSearch)
 
         rvDiary.layoutManager = LinearLayoutManager(requireContext())
         rvDiary.adapter = adapter
+
+        // ✅ 关键点 1：首次进入就加载数据库历史
+        viewModel.loadDiaries()
 
         fabAdd.setOnClickListener {
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, WriteDiaryFragment())
                 .addToBackStack("write_diary")
+                .commit()
+        }
+
+        // ✅ 关键点 4：给搜索页一个入口
+        btnGoSearch.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, SearchFragment())
+                .addToBackStack("search")
                 .commit()
         }
 

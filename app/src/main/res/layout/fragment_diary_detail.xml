@@ -18,4 +18,36 @@
         android:textSize="16sp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
+
+    <LinearLayout
+        android:layout_marginTop="16dp"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEdit"
+            android:text="编辑"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPin"
+            android:text="置顶"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDelete"
+            android:text="删除"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"/>
+    </LinearLayout>
+
+
 </LinearLayout>

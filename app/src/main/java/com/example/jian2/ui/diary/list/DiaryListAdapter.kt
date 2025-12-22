@@ -3,6 +3,7 @@ package com.example.jian2.ui.diary.list
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -21,6 +22,8 @@ class DiaryListAdapter(
         val tvTitle: TextView = itemView.findViewById(R.id.tvTitle)
         val tvPreview: TextView = itemView.findViewById(R.id.tvPreview)
         val tvDate: TextView = itemView.findViewById(R.id.tvDate)
+        val tvMood: TextView = itemView.findViewById(R.id.tvMood)
+        val ivPin: ImageView = itemView.findViewById(R.id.ivPin)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
@@ -30,9 +33,14 @@ class DiaryListAdapter(
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val item = getItem(position)
+
         holder.tvTitle.text = item.title
-        holder.tvPreview.text = item.content.take(40)
+        holder.tvPreview.text = item.content.take(40).let { if (item.content.length > 40) "$it…" else it }
         holder.tvDate.text = formatDate(item.createdAt)
+
+        // ✅ 关键点 3：心情 + 置顶 UI 绑定（你这里 mood 范围是 0~5）
+        holder.tvMood.text = "心情：${moodEmoji(item.mood)} ${item.mood}"
+        holder.ivPin.visibility = if (item.isPinned) View.VISIBLE else View.GONE
 
         holder.itemView.setOnClickListener { onClick(item) }
     }
@@ -42,15 +50,18 @@ class DiaryListAdapter(
         return sdf.format(Date(ts))
     }
 
+    private fun moodEmoji(mood: Int): String = when (mood) {
+        5 -> "😄"
+        4 -> "🙂"
+        3 -> "😐"
+        2 -> "😕"
+        else -> "😭"
+    }
+
     companion object {
         private val DIFF = object : DiffUtil.ItemCallback<DiaryEntity>() {
-            override fun areItemsTheSame(oldItem: DiaryEntity, newItem: DiaryEntity): Boolean {
-                return oldItem.id == newItem.id
-            }
-
-            override fun areContentsTheSame(oldItem: DiaryEntity, newItem: DiaryEntity): Boolean {
-                return oldItem == newItem
-            }
+            override fun areItemsTheSame(oldItem: DiaryEntity, newItem: DiaryEntity) = oldItem.id == newItem.id
+            override fun areContentsTheSame(oldItem: DiaryEntity, newItem: DiaryEntity) = oldItem == newItem
         }
     }
 }

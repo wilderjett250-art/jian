@@ -5,11 +5,11 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "diary")
 data class DiaryEntity(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0L,
+    @PrimaryKey(autoGenerate = true) val id: Long = 0L,
     val title: String,
     val content: String,
-    val mood: Int = 3,
+    val mood: Int,
     val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
     val isPinned: Boolean = false
 )
