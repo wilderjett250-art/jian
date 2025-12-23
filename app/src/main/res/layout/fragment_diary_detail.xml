@@ -1,53 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:padding="16dp"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/tvTitle"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
-
-    <TextView
-        android:id="@+id/tvContent"
-        android:layout_marginTop="12dp"
-        android:textSize="16sp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
-
     <LinearLayout
-        android:layout_marginTop="16dp"
-        android:orientation="horizontal"
+        android:orientation="vertical"
+        android:padding="16dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnEdit"
-            android:text="编辑"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"/>
+        <TextView
+            android:id="@+id/tvTitle"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnPin"
-            android:text="置顶"
-            android:layout_width="0dp"
+        <TextView
+            android:id="@+id/tvMeta"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_weight="1"/>
+            android:layout_marginTop="8dp"
+            android:alpha="0.75"
+            android:text="时间/心情"/>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnDelete"
-            android:text="删除"
-            android:layout_width="0dp"
+        <TextView
+            android:id="@+id/tvTags"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_weight="1"/>
+            android:layout_marginTop="6dp"
+            android:alpha="0.8"
+            android:visibility="gone"
+            android:text="标签：学习,探店"/>
+
+        <ImageView
+            android:id="@+id/ivCover"
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:layout_marginTop="12dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:contentDescription="cover"/>
+
+        <TextView
+            android:id="@+id/tvContent"
+            android:layout_marginTop="12dp"
+            android:textSize="16sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <LinearLayout
+            android:layout_marginTop="16dp"
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEdit"
+                android:text="编辑"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPin"
+                android:text="置顶"
+                android:layout_marginTop="8dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnShare"
+                android:text="分享"
+                android:layout_marginTop="8dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDelete"
+                android:text="删除"
+                android:layout_marginTop="8dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+
     </LinearLayout>
-
-
-</LinearLayout>
+</ScrollView>

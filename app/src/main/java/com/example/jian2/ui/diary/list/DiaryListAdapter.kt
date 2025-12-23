@@ -8,6 +8,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
 import com.example.jian2.R
 import com.example.jian2.ui.diary.data.DiaryEntity
 import java.text.SimpleDateFormat
@@ -26,39 +27,56 @@ class DiaryListAdapter(
 
         private val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
 
-        private fun moodEmoji(m: Int): String = when (m) {
+        private fun moodEmoji(m: Int): String = when (m.coerceIn(0, 5)) {
             5 -> "😄"
             4 -> "🙂"
             3 -> "😐"
             2 -> "😕"
-            else -> "😭"   // 0,1
+            else -> "😭"
         }
-
     }
 
-
     inner class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val ivCover: ImageView = itemView.findViewById(R.id.ivCover)
         private val tvTitle: TextView = itemView.findViewById(R.id.tvTitle)
         private val tvPreview: TextView = itemView.findViewById(R.id.tvPreview)
         private val tvDate: TextView = itemView.findViewById(R.id.tvDate)
         private val tvMood: TextView = itemView.findViewById(R.id.tvMood)
+        private val tvTags: TextView = itemView.findViewById(R.id.tvTags)
         private val ivPin: ImageView = itemView.findViewById(R.id.ivPin)
 
         fun bind(item: DiaryEntity) {
             tvTitle.text = item.title.ifBlank { "(无标题)" }
             tvPreview.text = item.content.take(40).let { if (item.content.length > 40) "$it…" else it }
             tvDate.text = sdf.format(Date(item.createdAt))
+            tvMood.text = "心情：${moodEmoji(item.mood)} ${item.mood}/5"
 
-            tvMood.text = "心情：${moodEmoji(item.mood)} ${item.mood}"
+            if (item.tagsText.isBlank()) {
+                tvTags.visibility = View.GONE
+            } else {
+                tvTags.visibility = View.VISIBLE
+                tvTags.text = "标签：${item.tagsText}"
+            }
+
             ivPin.visibility = if (item.isPinned) View.VISIBLE else View.GONE
+
+            val uri = item.coverUri
+            if (uri.isNullOrBlank()) {
+                ivCover.visibility = View.GONE
+            } else {
+                ivCover.visibility = View.VISIBLE
+                ivCover.load(uri) {
+                    crossfade(true)
+                }
+            }
 
             itemView.setOnClickListener { onClick(item) }
         }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_diary, parent, false)
-        return VH(view)
+        val v = LayoutInflater.from(parent.context).inflate(R.layout.item_diary, parent, false)
+        return VH(v)
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {

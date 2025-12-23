@@ -24,6 +24,29 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
+        <EditText
+            android:id="@+id/etTags"
+            android:hint="标签（逗号分隔，如：学习,探店）"
+            android:layout_marginTop="12dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPickCover"
+            android:text="选择封面图"
+            android:layout_marginTop="12dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+
+        <ImageView
+            android:id="@+id/ivCoverPreview"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:layout_marginTop="8dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:contentDescription="cover_preview"/>
+
         <TextView
             android:id="@+id/tvMood"
             android:text="心情：3"

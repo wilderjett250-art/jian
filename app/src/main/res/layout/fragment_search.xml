@@ -7,7 +7,42 @@
 
     <EditText
         android:id="@+id/etKeyword"
-        android:hint="搜索标题/正文"
+        android:hint="关键词（标题/正文/标签）"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <EditText
+        android:id="@+id/etTag"
+        android:hint="标签筛选（可选，如：学习）"
+        android:layout_marginTop="10dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <TextView
+        android:id="@+id/tvMoodMin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="心情最小值：0"
+        android:layout_marginTop="12dp"/>
+
+    <SeekBar
+        android:id="@+id/seekMoodMin"
+        android:max="5"
+        android:progress="0"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <TextView
+        android:id="@+id/tvMoodMax"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="心情最大值：5"
+        android:layout_marginTop="8dp"/>
+
+    <SeekBar
+        android:id="@+id/seekMoodMax"
+        android:max="5"
+        android:progress="5"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
@@ -17,6 +52,16 @@
         android:layout_marginTop="12dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
+
+    <TextView
+        android:id="@+id/tvEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="暂无结果"
+        android:gravity="center"
+        android:visibility="gone"
+        android:layout_marginTop="12dp"
+        android:alpha="0.7"/>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvResult"

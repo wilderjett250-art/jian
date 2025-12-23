@@ -2,12 +2,10 @@ package com.example.jian2.ui.diary.list
 
 import android.os.Bundle
 import android.view.View
-import android.widget.TextView
+import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.jian2.R
@@ -26,8 +24,8 @@ class DiaryListFragment : Fragment(R.layout.fragment_diary_list) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val recyclerView = view.findViewById<RecyclerView>(R.id.recyclerView)
-        val emptyState = view.findViewById<TextView>(R.id.emptyState)
+        val rv = view.findViewById<RecyclerView>(R.id.rvDiary)
+        val emptyState = view.findViewById<LinearLayout>(R.id.emptyState)
         val fabAdd = view.findViewById<FloatingActionButton>(R.id.fabAdd)
         val btnGoSearch = view.findViewById<MaterialButton>(R.id.btnGoSearch)
 
@@ -38,20 +36,11 @@ class DiaryListFragment : Fragment(R.layout.fragment_diary_list) {
                 .commit()
         }
 
-        recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        recyclerView.adapter = adapter
+        rv.layoutManager = LinearLayoutManager(requireContext())
+        rv.adapter = adapter
 
-        // ✅ 进入页面就加载历史日记（你之前缺的关键点）
+        // ✅ 进入就加载历史日记
         viewModel.loadDiaries()
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.diaries.collect { list ->
-                    adapter.submitList(list)
-                    emptyState.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
-                }
-            }
-        }
 
         fabAdd.setOnClickListener {
             parentFragmentManager.beginTransaction()
@@ -60,12 +49,26 @@ class DiaryListFragment : Fragment(R.layout.fragment_diary_list) {
                 .commit()
         }
 
-        // ✅ SearchFragment 入口
         btnGoSearch.setOnClickListener {
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, SearchFragment())
                 .addToBackStack("search")
                 .commit()
         }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.diaries.collect { list ->
+                adapter.submitList(list)
+                val isEmpty = list.isEmpty()
+                emptyState.visibility = if (isEmpty) View.VISIBLE else View.GONE
+                rv.visibility = if (isEmpty) View.GONE else View.VISIBLE
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // 返回列表时刷新（编辑/置顶后更直观）
+        viewModel.loadDiaries()
     }
 }

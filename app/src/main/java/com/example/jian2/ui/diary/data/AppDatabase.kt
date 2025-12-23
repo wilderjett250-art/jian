@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [DiaryEntity::class],
-    version = 2,
+    version = 2, // ✅ 升级：因为 DiaryEntity 加了 tagsText / coverUri
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -24,13 +24,8 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "jian_diary.db"
                 )
-                    // ✅ schema 不一致直接删库重建（避免启动闪退）
-                    .fallbackToDestructiveMigration()
-                    // ✅ 先止血：允许主线程查询（等稳定后再改回 IO）
-                    .allowMainThreadQueries()
+                    .fallbackToDestructiveMigration() // ✅ 平替：省去写 migration，稳定不闪退（会清旧数据）
                     .build()
-
-
                 INSTANCE = db
                 db
             }
