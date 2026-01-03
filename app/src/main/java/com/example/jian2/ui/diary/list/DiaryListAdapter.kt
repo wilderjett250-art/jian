@@ -65,9 +65,7 @@ class DiaryListAdapter(
                 ivCover.visibility = View.GONE
             } else {
                 ivCover.visibility = View.VISIBLE
-                ivCover.load(uri) {
-                    crossfade(true)
-                }
+                ivCover.load(uri) { crossfade(true) }
             }
 
             itemView.setOnClickListener { onClick(item) }

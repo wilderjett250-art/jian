@@ -3,6 +3,7 @@ package com.example.jian2.ui.diary.detail
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
@@ -14,6 +15,7 @@ import com.example.jian2.R
 import com.example.jian2.ui.diary.DiaryViewModel
 import com.example.jian2.ui.diary.write.WriteDiaryFragment
 import com.google.android.material.button.MaterialButton
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -25,11 +27,8 @@ class DiaryDetailFragment : Fragment(R.layout.fragment_diary_detail) {
 
     companion object {
         private const val ARG_ID = "arg_id"
-
-        fun newInstance(id: Long): DiaryDetailFragment {
-            return DiaryDetailFragment().apply {
-                arguments = Bundle().apply { putLong(ARG_ID, id) }
-            }
+        fun newInstance(id: Long) = DiaryDetailFragment().apply {
+            arguments = Bundle().apply { putLong(ARG_ID, id) }
         }
     }
 
@@ -38,12 +37,12 @@ class DiaryDetailFragment : Fragment(R.layout.fragment_diary_detail) {
 
         val tvTitle = view.findViewById<TextView>(R.id.tvTitle)
         val tvMeta = view.findViewById<TextView>(R.id.tvMeta)
+        val tvContent = view.findViewById<TextView>(R.id.tvContent)
         val tvTags = view.findViewById<TextView>(R.id.tvTags)
         val ivCover = view.findViewById<ImageView>(R.id.ivCover)
-        val tvContent = view.findViewById<TextView>(R.id.tvContent)
 
+        val btnPinned = view.findViewById<ImageButton>(R.id.btnPinned)
         val btnEdit = view.findViewById<MaterialButton>(R.id.btnEdit)
-        val btnPin = view.findViewById<MaterialButton>(R.id.btnPin)
         val btnShare = view.findViewById<MaterialButton>(R.id.btnShare)
         val btnDelete = view.findViewById<MaterialButton>(R.id.btnDelete)
 
@@ -80,8 +79,18 @@ class DiaryDetailFragment : Fragment(R.layout.fragment_diary_detail) {
                     ivCover.load(e.coverUri) { crossfade(true) }
                 }
 
-                btnPin.text = if (e.isPinned) "取消置顶" else "置顶"
+                // 置顶按钮状态（你实体字段是 isPinned）
+                btnPinned.setImageResource(
+                    if (e.isPinned) android.R.drawable.btn_star_big_on
+                    else android.R.drawable.btn_star_big_off
+                )
             }
+        }
+
+        btnPinned.setOnClickListener {
+            val e = viewModel.editing.value ?: return@setOnClickListener
+            viewModel.setPinned(e.id, !e.isPinned)
+            toast(if (!e.isPinned) "已置顶" else "已取消置顶")
         }
 
         btnEdit.setOnClickListener {
@@ -89,12 +98,6 @@ class DiaryDetailFragment : Fragment(R.layout.fragment_diary_detail) {
                 .replace(R.id.fragment_container, WriteDiaryFragment.newInstanceEdit(id))
                 .addToBackStack("write_edit")
                 .commit()
-        }
-
-        btnPin.setOnClickListener {
-            val e = viewModel.editing.value ?: return@setOnClickListener
-            viewModel.setPinned(e.id, !e.isPinned)
-            toast(if (!e.isPinned) "已置顶" else "已取消置顶")
         }
 
         btnShare.setOnClickListener {

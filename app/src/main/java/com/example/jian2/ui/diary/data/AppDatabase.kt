@@ -6,13 +6,14 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [DiaryEntity::class],
-    version = 2, // ✅ 升级：因为 DiaryEntity 加了 tagsText / coverUri
+    entities = [DiaryEntity::class, DiaryMediaEntity::class],
+    version = 3, // ✅ 改大一点，触发 destructive migration
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun diaryDao(): DiaryDao
+    abstract fun diaryMediaDao(): DiaryMediaDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -22,9 +23,10 @@ abstract class AppDatabase : RoomDatabase() {
                 val db = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "jian_diary.db"
+                    "jian2.db"
                 )
-                    .fallbackToDestructiveMigration() // ✅ 平替：省去写 migration，稳定不闪退（会清旧数据）
+                    // ✅ 开发阶段最省事：结构变了就重建
+                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = db
                 db

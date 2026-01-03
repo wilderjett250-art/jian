@@ -18,6 +18,7 @@ import com.example.jian2.ui.diary.DiaryViewModel
 import com.example.jian2.worker.ReminderScheduler
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.switchmaterial.SwitchMaterial
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 class ProfileFragment : Fragment(R.layout.fragment_profile) {
@@ -67,7 +68,7 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
         }
         tvVersion.text = "版本：$versionName"
 
-        // 作者信息（你改成真实信息）
+        // 作者信息
         tvAuthor.text = "开发者：孙亿豪  学号：202305100226"
 
         // 读取设置
@@ -93,11 +94,11 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
         }
 
         btnExport.setOnClickListener {
-            viewModel.exportRecentAsText(20) { text ->
+            viewModel.exportRecentAsText(20) { text: String ->
                 val intent = Intent(Intent.ACTION_SEND).apply {
                     type = "text/plain"
                     putExtra(Intent.EXTRA_SUBJECT, "墨笺日记导出（最近20条）")
-                    putExtra(Intent.EXTRA_TEXT, text)
+                    putExtra(Intent.EXTRA_TEXT, text) // ✅ text 明确是 String，不会歧义
                 }
                 startActivity(Intent.createChooser(intent, "分享导出内容"))
             }
@@ -105,13 +106,11 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
 
         swDark.setOnCheckedChangeListener { _, checked ->
             getPrefs().edit().putBoolean("dark_mode", checked).apply()
-            // 直接重建 Activity 生效
             requireActivity().recreate()
         }
 
         swReminder.setOnCheckedChangeListener { _, checked ->
             if (checked) {
-                // Android 13+ 需要通知权限
                 if (Build.VERSION.SDK_INT >= 33) {
                     val granted = ContextCompat.checkSelfPermission(
                         requireContext(),

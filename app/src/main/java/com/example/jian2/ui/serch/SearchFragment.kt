@@ -1,4 +1,5 @@
 package com.example.jian2.ui.search
+import com.example.jian2.ui.diary.data.DiaryEntity
 
 import android.os.Bundle
 import android.view.View
@@ -73,8 +74,8 @@ class SearchFragment : Fragment(R.layout.fragment_search) {
             val tag = etTag.text.toString()
             val min = seekMin.progress
             val max = seekMax.progress
+            viewModel.searchAdvanced(kw, tag, min, max) { result: List<DiaryEntity> ->
 
-            viewModel.searchAdvanced(kw, tag, min, max) { result ->
                 adapter.submitList(result)
                 val empty = result.isEmpty()
                 tvEmpty.visibility = if (empty) View.VISIBLE else View.GONE

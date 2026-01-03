@@ -26,38 +26,68 @@
 
         <EditText
             android:id="@+id/etTags"
-            android:hint="标签（逗号分隔，如：学习,探店）"
+            android:hint="标签（可选，逗号分隔）"
             android:layout_marginTop="12dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnPickCover"
-            android:text="选择封面图"
+            android:text="选择图片"
             android:layout_marginTop="12dp"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content" />
 
         <ImageView
-            android:id="@+id/ivCoverPreview"
-            android:layout_width="match_parent"
-            android:layout_height="180dp"
+            android:id="@+id/ivCover"
             android:layout_marginTop="8dp"
+            android:adjustViewBounds="true"
             android:scaleType="centerCrop"
             android:visibility="gone"
-            android:contentDescription="cover_preview"/>
+            android:layout_width="match_parent"
+            android:layout_height="180dp" />
+
+        <!-- 新增：音频 -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPickAudio"
+            android:text="选择语音/音频"
+            android:layout_marginTop="12dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
 
         <TextView
-            android:id="@+id/tvMood"
-            android:text="心情：3"
-            android:layout_marginTop="12dp"
-            android:layout_width="wrap_content"
+            android:id="@+id/tvAudioHint"
+            android:text="未选择音频"
+            android:alpha="0.7"
+            android:layout_marginTop="6dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content" />
+
+        <!-- 新增：视频 -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPickVideo"
+            android:text="选择视频"
+            android:layout_marginTop="12dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/tvVideoHint"
+            android:text="未选择视频"
+            android:alpha="0.7"
+            android:layout_marginTop="6dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:layout_marginTop="16dp"
+            android:text="心情值（0~5）"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
 
         <SeekBar
             android:id="@+id/seekMood"
             android:max="5"
-            android:progress="3"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 

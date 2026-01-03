@@ -1,74 +1,127 @@
 package com.example.jian2.ui.diary
+import kotlinx.coroutines.launch
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.jian2.ui.diary.data.AppDatabase
 import com.example.jian2.ui.diary.data.DiaryEntity
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import kotlin.math.roundToInt
 
 class DiaryViewModel(application: Application) : AndroidViewModel(application) {
 
     private val dao = AppDatabase.get(application).diaryDao()
 
+    // =========================
+    // 列表（DiaryListFragment）
+    // =========================
     private val _diaries = MutableStateFlow<List<DiaryEntity>>(emptyList())
     val diaries: StateFlow<List<DiaryEntity>> = _diaries
 
-    private val _editing = MutableStateFlow<DiaryEntity?>(null)
-    val editing: StateFlow<DiaryEntity?> = _editing
-
-    private val _dayDiaries = MutableStateFlow<List<DiaryEntity>>(emptyList())
-    val dayDiaries: StateFlow<List<DiaryEntity>> = _dayDiaries
-
-    data class ProfileStats(
-        val totalCount: Int = 0,
-        val monthCount: Int = 0,
-        val monthAvgMood: Double = 0.0,
-        val monthDays: Int = 0,
-        val streakDays: Int = 0
-    )
-
-    private val _profileStats = MutableStateFlow(ProfileStats())
-    val profileStats: StateFlow<ProfileStats> = _profileStats
-
     fun loadDiaries() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             _diaries.value = dao.getAll()
         }
     }
 
+    fun getDiaryByIdFromCache(id: Long): DiaryEntity? =
+        _diaries.value.firstOrNull { it.id == id }
+
+    // =========================
+    // 详情（DiaryDetailFragment）
+    // =========================
+    private val _editing = MutableStateFlow<DiaryEntity?>(null)
+    val editing: StateFlow<DiaryEntity?> = _editing
+
+    private var editingJob: Job? = null
+
     fun loadDiaryById(id: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
-            _editing.value = dao.getById(id)
+        editingJob?.cancel()
+        editingJob = viewModelScope.launch {
+            dao.observeById(id).collect { e ->
+                _editing.value = e
+            }
         }
     }
 
-    fun clearEditing() {
-        _editing.value = null
+    fun setPinned(id: Long, pinned: Boolean) {
+        viewModelScope.launch {
+            dao.setPinned(id, pinned)
+            loadDiaries()
+            // 详情如果正看这条，顺便刷新一次
+            if (_editing.value?.id == id) {
+                _editing.value = dao.getById(id)
+            }
+        }
     }
 
-    fun addDiary(title: String, content: String, mood: Int, tagsText: String, coverUri: String?) {
-        viewModelScope.launch(Dispatchers.IO) {
+    fun deleteDiary(id: Long) {
+        viewModelScope.launch {
+            dao.deleteById(id)
+            if (_editing.value?.id == id) _editing.value = null
+            loadDiaries()
+        }
+    }
+
+    fun exportDiaryAsText(id: Long, onResult: (String) -> Unit) {
+        viewModelScope.launch {
+            val e = dao.getById(id)
+            if (e == null) {
+                onResult("(日记不存在)")
+                return@launch
+            }
+
+            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+            val text = buildString {
+                appendLine("标题：${e.title.ifBlank { "(无标题)" }}")
+                appendLine("时间：${sdf.format(Date(e.createdAt))}")
+                appendLine("心情：${e.mood}/5")
+                if (e.tagsText.isNotBlank()) appendLine("标签：${e.tagsText}")
+                appendLine()
+                appendLine(e.content)
+                if (!e.coverUri.isNullOrBlank()) appendLine("\n[封面] ${e.coverUri}")
+                if (!e.audioUri.isNullOrBlank()) appendLine("[音频] ${e.audioUri}")
+                if (!e.videoUri.isNullOrBlank()) appendLine("[视频] ${e.videoUri}")
+            }
+            onResult(text)
+        }
+    }
+
+    // =========================
+    // 写日记（WriteDiaryFragment）
+    // =========================
+    fun addDiary(
+        title: String,
+        content: String,
+        mood: Int,
+        tagsText: String? = null,
+        coverUri: String? = null,
+        audioUri: String? = null,
+        videoUri: String? = null
+    ) {
+        viewModelScope.launch {
             dao.insert(
                 DiaryEntity(
                     title = title,
                     content = content,
                     mood = mood,
-                    tagsText = tagsText,
-                    coverUri = coverUri
+                    // ✅ 关键：避免 String? -> String 报错
+                    tagsText = tagsText ?: "",
+                    coverUri = coverUri,
+                    audioUri = audioUri,
+                    videoUri = videoUri
                 )
             )
             loadDiaries()
-            loadProfileStats()
         }
     }
 
@@ -77,186 +130,235 @@ class DiaryViewModel(application: Application) : AndroidViewModel(application) {
         title: String,
         content: String,
         mood: Int,
-        tagsText: String,
-        coverUri: String?,
-        isPinned: Boolean,
-        createdAt: Long
+        tagsText: String? = null,
+        coverUri: String? = null,
+        audioUri: String? = null,
+        videoUri: String? = null
     ) {
-        viewModelScope.launch(Dispatchers.IO) {
-            dao.update(
-                DiaryEntity(
-                    id = id,
-                    title = title,
-                    content = content,
-                    mood = mood,
-                    tagsText = tagsText,
-                    coverUri = coverUri,
-                    createdAt = createdAt,
-                    updatedAt = System.currentTimeMillis(),
-                    isPinned = isPinned
-                )
+        viewModelScope.launch {
+            val old = dao.getById(id) ?: return@launch
+            val updated = old.copy(
+                title = title,
+                content = content,
+                mood = mood,
+                tagsText = tagsText ?: old.tagsText,
+                coverUri = coverUri,
+                audioUri = audioUri,
+                videoUri = videoUri
             )
+            dao.update(updated)
             loadDiaries()
-            loadProfileStats()
+            if (_editing.value?.id == id) _editing.value = updated
         }
     }
 
-    fun deleteDiary(id: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
-            dao.deleteById(id)
-            if (_editing.value?.id == id) _editing.value = null
-            loadDiaries()
-            loadProfileStats()
-        }
-    }
+    // =========================
+    // Profile（ProfileFragment）
+    // =========================
+    data class ProfileStats(
+        val totalCount: Int = 0,
+        val monthCount: Int = 0,
+        val monthAvgMood: String = "-",
+        val monthDays: Int = 0,
+        val streakDays: Int = 0
+    )
 
-    fun setPinned(id: Long, pinned: Boolean) {
-        viewModelScope.launch(Dispatchers.IO) {
-            dao.setPinned(id, pinned)
-            // 详情页如果正在看这条，也更新一下
-            val cur = _editing.value
-            if (cur != null && cur.id == id) {
-                _editing.value = cur.copy(isPinned = pinned, updatedAt = System.currentTimeMillis())
-            }
-            loadDiaries()
-        }
-    }
-
-    fun searchAdvanced(
-        keyword: String,
-        tag: String,
-        moodMin: Int,
-        moodMax: Int,
-        onResult: (List<DiaryEntity>) -> Unit
-    ) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val kw = "%${keyword.trim()}%"
-            val safeTag = tag.trim()
-            val min = moodMin.coerceIn(0, 5)
-            val max = moodMax.coerceIn(0, 5).coerceAtLeast(min)
-            val result = dao.searchAdvanced(kw, safeTag, min, max)
-            withContext(Dispatchers.Main) { onResult(result) }
-        }
-    }
-
-    fun loadDiariesForDay(dayStartMillis: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val oneDay = 24L * 60L * 60L * 1000L
-            _dayDiaries.value = dao.getByDateRange(dayStartMillis, dayStartMillis + oneDay)
-        }
-    }
+    private val _profileStats = MutableStateFlow(ProfileStats())
+    val profileStats: StateFlow<ProfileStats> = _profileStats
 
     fun loadProfileStats() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val now = System.currentTimeMillis()
-            val monthStart = startOfMonthMillis(now)
-            val nextMonthStart = startOfNextMonthMillis(now)
+        viewModelScope.launch {
+            val cal = Calendar.getInstance()
+
+            // 本月开始 00:00:00
+            cal.set(Calendar.DAY_OF_MONTH, 1)
+            cal.set(Calendar.HOUR_OF_DAY, 0)
+            cal.set(Calendar.MINUTE, 0)
+            cal.set(Calendar.SECOND, 0)
+            cal.set(Calendar.MILLISECOND, 0)
+            val monthStart = cal.timeInMillis
+
+            // 下月开始
+            cal.add(Calendar.MONTH, 1)
+            val nextMonthStart = cal.timeInMillis
 
             val total = dao.countAll()
             val monthCount = dao.countByRange(monthStart, nextMonthStart)
-            val avg = (dao.avgMoodByRange(monthStart, nextMonthStart) ?: 0.0)
+            val monthAvg = dao.avgMoodByRange(monthStart, nextMonthStart)
             val monthDays = dao.distinctDaysCountByRange(monthStart, nextMonthStart)
+
+            // 连续打卡：用最近 N 天的 yyyy-MM-dd（倒序）计算
             val streak = calcStreakDays(dao.getDistinctDaysDesc(60))
 
             _profileStats.value = ProfileStats(
                 totalCount = total,
                 monthCount = monthCount,
-                monthAvgMood = (avg * 10.0).roundToInt() / 10.0,
+                monthAvgMood = monthAvg?.let { String.format(Locale.getDefault(), "%.2f", it) } ?: "-",
                 monthDays = monthDays,
                 streakDays = streak
             )
         }
     }
 
-    fun exportRecentAsText(limit: Int, onReady: (String) -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val list = dao.getRecent(limit)
-            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-            val text = buildString {
-                append("《墨笺》日记导出（最近").append(limit).append("条）\n")
-                append("导出时间：").append(Date()).append("\n\n")
-                if (list.isEmpty()) {
-                    append("（暂无日记）\n")
-                } else {
-                    list.forEachIndexed { i, e ->
-                        append("【").append(i + 1).append("】").append(e.title.ifBlank { "(无标题)" }).append("\n")
-                        append("时间：").append(sdf.format(Date(e.createdAt)))
-                            .append("  心情：").append(e.mood).append("/5")
-                            .append("  置顶：").append(if (e.isPinned) "是" else "否").append("\n")
-                        if (e.tagsText.isNotBlank()) append("标签：").append(e.tagsText).append("\n")
-                        append(e.content).append("\n")
-                        append("--------------------------------------------------\n\n")
-                    }
-                }
-            }
-            withContext(Dispatchers.Main) { onReady(text) }
+    private fun calcStreakDays(daysDesc: List<String>): Int {
+        if (daysDesc.isEmpty()) return 0
+        val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val cal = Calendar.getInstance()
+
+        fun toDay0(millis: Long): Long {
+            cal.timeInMillis = millis
+            cal.set(Calendar.HOUR_OF_DAY, 0)
+            cal.set(Calendar.MINUTE, 0)
+            cal.set(Calendar.SECOND, 0)
+            cal.set(Calendar.MILLISECOND, 0)
+            return cal.timeInMillis
         }
-    }
 
-    fun exportDiaryAsText(id: Long, onReady: (String) -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val e = dao.getById(id)
-            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-            val text = if (e == null) {
-                "（日记不存在）"
-            } else buildString {
-                append("《墨笺》日记分享\n\n")
-                append("标题：").append(e.title.ifBlank { "(无标题)" }).append("\n")
-                append("时间：").append(sdf.format(Date(e.createdAt))).append("\n")
-                append("心情：").append(e.mood).append("/5").append("\n")
-                if (e.tagsText.isNotBlank()) append("标签：").append(e.tagsText).append("\n")
-                append("\n").append(e.content).append("\n")
-            }
-            withContext(Dispatchers.Main) { onReady(text) }
-        }
-    }
+        val today0 = toDay0(System.currentTimeMillis())
+        val first = fmt.parse(daysDesc[0]) ?: return 0
+        var expected = toDay0(first.time)
 
-    private fun startOfMonthMillis(anyMillis: Long): Long {
-        val cal = Calendar.getInstance().apply {
-            timeInMillis = anyMillis
-            set(Calendar.DAY_OF_MONTH, 1)
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        return cal.timeInMillis
-    }
-
-    private fun startOfNextMonthMillis(anyMillis: Long): Long {
-        val cal = Calendar.getInstance().apply {
-            timeInMillis = anyMillis
-            set(Calendar.DAY_OF_MONTH, 1)
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-            add(Calendar.MONTH, 1)
-        }
-        return cal.timeInMillis
-    }
-
-    private fun calcStreakDays(distinctDaysDesc: List<String>): Int {
-        // distinctDaysDesc: ["2025-12-24","2025-12-23"...]
-        if (distinctDaysDesc.isEmpty()) return 0
-        val set = distinctDaysDesc.toHashSet()
-        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-
-        val cal = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
+        // 允许第一条是今天或昨天
+        if (expected != today0) {
+            val yesterday0 = today0 - 24L * 60 * 60 * 1000
+            if (expected != yesterday0) return 0
         }
 
         var streak = 0
-        while (true) {
-            val key = sdf.format(cal.time)
-            if (set.contains(key)) {
-                streak++
-                cal.add(Calendar.DAY_OF_MONTH, -1)
-            } else break
+        for (d in daysDesc) {
+            val p = fmt.parse(d) ?: break
+            val day0 = toDay0(p.time)
+            if (day0 != expected) break
+            streak++
+            expected -= 24L * 60 * 60 * 1000
         }
         return streak
+    }
+
+    fun exportRecentAsText(limit: Int, onResult: (String) -> Unit) {
+        viewModelScope.launch {
+            val list = dao.getRecent(limit.coerceAtLeast(1))
+            if (list.isEmpty()) {
+                onResult("(暂无日记)")
+                return@launch
+            }
+
+            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+            val text = buildString {
+                appendLine("墨笺日记导出（最近${list.size}条）")
+                appendLine("--------------------------------")
+                list.forEachIndexed { idx, e ->
+                    appendLine()
+                    appendLine("#${idx + 1} ${e.title.ifBlank { "(无标题)" }}")
+                    appendLine("时间：${sdf.format(Date(e.createdAt))}    心情：${e.mood}/5")
+                    if (e.tagsText.isNotBlank()) appendLine("标签：${e.tagsText}")
+                    appendLine(e.content)
+                }
+            }
+            onResult(text)
+        }
+    }
+
+
+    // ✅ 兼容 SearchFragment：支持心情区间 + 回调返回结果（不影响已有 searchAdvanced）
+    fun searchAdvanced(
+        query: String,
+        tag: String?,
+        moodMin: Int,
+        moodMax: Int,
+        onResult: (List<DiaryEntity>) -> Unit
+    ) {
+        viewModelScope.launch {
+            val all = dao.getAll()
+
+            val q = query.trim()
+            val t = tag?.trim().orEmpty()
+
+            val lo = moodMin.coerceAtMost(moodMax)
+            val hi = moodMax.coerceAtLeast(moodMin)
+
+            val filtered = all.filter { d ->
+                val hitQuery =
+                    q.isBlank() || d.title.contains(q, ignoreCase = true) || d.content.contains(q, ignoreCase = true)
+
+                val hitTag =
+                    t.isBlank() || d.tagsText.contains(t, ignoreCase = true)
+
+                val hitMoodRange =
+                    d.mood in lo..hi
+
+                hitQuery && hitTag && hitMoodRange
+            }
+
+            // 保持你 SearchFragment 的调用方式：直接回调 List<DiaryEntity>
+            onResult(filtered)
+        }
+    }
+
+    // =========================
+    // Calendar（日历页面）
+    // =========================
+    private val _dayDiaries = MutableStateFlow<List<DiaryEntity>>(emptyList())
+    val dayDiaries: StateFlow<List<DiaryEntity>> = _dayDiaries
+
+    fun loadDiariesForDay(dayMillis: Long) {
+        viewModelScope.launch {
+            val cal = Calendar.getInstance()
+            cal.timeInMillis = dayMillis
+            cal.set(Calendar.HOUR_OF_DAY, 0)
+            cal.set(Calendar.MINUTE, 0)
+            cal.set(Calendar.SECOND, 0)
+            cal.set(Calendar.MILLISECOND, 0)
+            val start = cal.timeInMillis
+            cal.add(Calendar.DAY_OF_MONTH, 1)
+            val end = cal.timeInMillis
+
+            // 如果你 Dao 有 getByRange(start,end) 就用，没有就 fallback 用 getAll 过滤
+            val list = try {
+                dao.getByRange(start, end)
+            } catch (_: Throwable) {
+                dao.getAll().filter { it.createdAt in start until end }
+            }
+
+            _dayDiaries.value = list
+        }
+    }
+
+    // =========================
+    // Search（搜索页面）
+    // =========================
+    private val _searchResults = MutableStateFlow<List<DiaryEntity>>(emptyList())
+    val searchResults: StateFlow<List<DiaryEntity>> = _searchResults
+
+    fun searchAdvanced(
+        query: String,
+        tag: String? = null,
+        mood: Int? = null,
+        pinnedOnly: Boolean = false
+    ) {
+        viewModelScope.launch {
+            val all = dao.getAll()
+
+            val q = query.trim()
+            val t = tag?.trim().orEmpty()
+
+            val filtered = all.filter { d ->
+                val hitQuery =
+                    q.isBlank() || d.title.contains(q, ignoreCase = true) || d.content.contains(q, ignoreCase = true)
+
+                val hitTag =
+                    t.isBlank() || d.tagsText.contains(t, ignoreCase = true)
+
+                val hitMood =
+                    mood?.let { d.mood == it } ?: true
+
+                val hitPinned =
+                    if (pinnedOnly) d.isPinned else true
+
+                hitQuery && hitTag && hitMood && hitPinned
+            }
+
+            _searchResults.value = filtered
+        }
     }
 }
