@@ -27,7 +27,7 @@
         app:layout_constraintTop_toTopOf="@id/tvTitle"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- ✅ 新增：元信息（时间/心情） -->
+    <!-- ✅ 新增：元信息 -->
     <TextView
         android:id="@+id/tvMeta"
         android:layout_width="0dp"
@@ -78,6 +78,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="编辑"/>
+
+        <!-- ✅ 新增：文字置顶按钮（btnPin） -->
+        <Button
+            android:id="@+id/btnPin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="置顶"
+            android:layout_marginStart="8dp"/>
 
         <Button
             android:id="@+id/btnShare"

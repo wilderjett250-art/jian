@@ -1,11 +1,11 @@
 package com.example.jian2.ui.search
-import com.example.jian2.ui.diary.data.DiaryEntity
 
 import android.os.Bundle
 import android.view.View
 import android.widget.EditText
 import android.widget.SeekBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -22,6 +22,8 @@ class SearchFragment : Fragment(R.layout.fragment_search) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        Toast.makeText(requireContext(), "SearchFragment 已进入", Toast.LENGTH_SHORT).show()
 
         val etKeyword = view.findViewById<EditText>(R.id.etKeyword)
         val etTag = view.findViewById<EditText>(R.id.etTag)
@@ -74,8 +76,15 @@ class SearchFragment : Fragment(R.layout.fragment_search) {
             val tag = etTag.text.toString()
             val min = seekMin.progress
             val max = seekMax.progress
-            viewModel.searchAdvanced(kw, tag, min, max) { result: List<DiaryEntity> ->
 
+            Toast.makeText(requireContext(), "搜索中…", Toast.LENGTH_SHORT).show()
+
+            viewModel.searchAdvanced(
+                query = kw,
+                tag = tag,          // 空串表示不筛标签，Dao 里已经写了 (:tag='' OR ...)
+                moodMin = min,
+                moodMax = max
+            ) { result ->
                 adapter.submitList(result)
                 val empty = result.isEmpty()
                 tvEmpty.visibility = if (empty) View.VISIBLE else View.GONE

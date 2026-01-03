@@ -10,36 +10,35 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.SeekBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import com.example.jian2.R
 import com.example.jian2.ui.diary.DiaryViewModel
 import com.google.android.material.button.MaterialButton
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 class WriteDiaryFragment : Fragment() {
 
     private val viewModel: DiaryViewModel by activityViewModels()
 
-    private var coverUriStr: String? = null
-    private var audioUriStr: String? = null
-    private var videoUriStr: String? = null
-
-    private var editId: Long = -1L
-
     companion object {
-        private const val ARG_EDIT_ID = "edit_id"
+        private const val ARG_EDIT_ID = "arg_edit_id"
 
         fun newInstanceEdit(id: Long): WriteDiaryFragment {
             return WriteDiaryFragment().apply {
-                arguments = bundleOf(ARG_EDIT_ID to id)
+                arguments = Bundle().apply { putLong(ARG_EDIT_ID, id) }
             }
         }
     }
+
+    private var editId: Long = 0L
+
+    private var coverUriStr: String? = null
+    private var audioUriStr: String? = null
+    private var videoUriStr: String? = null
 
     private val pickImageLauncher =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
@@ -73,6 +72,14 @@ class WriteDiaryFragment : Fragment() {
             }
         }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        editId = arguments?.getLong(ARG_EDIT_ID, 0L) ?: 0L
+        if (editId != 0L) {
+            viewModel.loadDiaryById(editId)
+        }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -80,10 +87,6 @@ class WriteDiaryFragment : Fragment() {
     ): View = inflater.inflate(R.layout.fragment_write_diary, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        editId = arguments?.getLong(ARG_EDIT_ID, -1L) ?: -1L
-
         val etTitle = view.findViewById<EditText>(R.id.etTitle)
         val etContent = view.findViewById<EditText>(R.id.etContent)
         val etTags = view.findViewById<EditText>(R.id.etTags)
@@ -98,37 +101,30 @@ class WriteDiaryFragment : Fragment() {
         btnPickAudio.setOnClickListener { pickAudioLauncher.launch(arrayOf("audio/*")) }
         btnPickVideo.setOnClickListener { pickVideoLauncher.launch(arrayOf("video/*")) }
 
-        // ====== 编辑模式：回填 ======
-        if (editId > 0) {
-            viewModel.loadDiaryById(editId)
+        // 编辑模式：回填
+        if (editId != 0L) {
             viewLifecycleOwner.lifecycleScope.launch {
                 viewModel.editing.collect { e ->
                     if (e == null || e.id != editId) return@collect
-
                     etTitle.setText(e.title)
                     etContent.setText(e.content)
                     etTags.setText(e.tagsText)
-
-                    // moodBar 取值与你实体 mood 对齐（你项目里是 0~5）
                     moodBar.progress = e.mood
 
                     coverUriStr = e.coverUri
                     audioUriStr = e.audioUri
                     videoUriStr = e.videoUri
 
-                    // UI 提示
-                    if (!coverUriStr.isNullOrBlank()) {
+                    e.coverUri?.let { uriStr ->
                         view.findViewById<ImageView>(R.id.ivCover)?.apply {
                             visibility = View.VISIBLE
-                            setImageURI(Uri.parse(coverUriStr))
+                            setImageURI(Uri.parse(uriStr))
                         }
                     }
-                    if (!audioUriStr.isNullOrBlank()) {
-                        view.findViewById<TextView>(R.id.tvAudioHint)?.text = "已选择音频：${Uri.parse(audioUriStr).lastPathSegment ?: audioUriStr}"
-                    }
-                    if (!videoUriStr.isNullOrBlank()) {
-                        view.findViewById<TextView>(R.id.tvVideoHint)?.text = "已选择视频：${Uri.parse(videoUriStr).lastPathSegment ?: videoUriStr}"
-                    }
+                    view.findViewById<TextView>(R.id.tvAudioHint)?.text =
+                        if (e.audioUri.isNullOrBlank()) "未选择音频" else "已选择音频：${Uri.parse(e.audioUri).lastPathSegment ?: e.audioUri}"
+                    view.findViewById<TextView>(R.id.tvVideoHint)?.text =
+                        if (e.videoUri.isNullOrBlank()) "未选择视频" else "已选择视频：${Uri.parse(e.videoUri).lastPathSegment ?: e.videoUri}"
                 }
             }
         }
@@ -136,28 +132,30 @@ class WriteDiaryFragment : Fragment() {
         btnSave.setOnClickListener {
             val title = etTitle.text.toString().trim()
             val content = etContent.text.toString().trim()
-            val mood = moodBar.progress
-            val tags = etTags.text.toString().trim().ifBlank { null }
+            val tags = etTags.text.toString().trim()
 
-            if (editId > 0) {
-                // ✅ 编辑：不影响新增逻辑
-                viewModel.updateDiary(
-                    id = editId,
+            if (title.isBlank() && content.isBlank()) {
+                Toast.makeText(requireContext(), "标题和内容不能都为空", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            if (editId == 0L) {
+                viewModel.addDiary(
                     title = title,
                     content = content,
-                    mood = mood,
-                    tagsText = tags,
+                    mood = moodBar.progress,
+                    tagsText = tags.ifBlank { null },
                     coverUri = coverUriStr,
                     audioUri = audioUriStr,
                     videoUri = videoUriStr
                 )
             } else {
-                // ✅ 新增：保持你原来功能不变
-                viewModel.addDiary(
+                viewModel.updateDiary(
+                    id = editId,
                     title = title,
                     content = content,
-                    mood = mood,
-                    tagsText = tags,
+                    mood = moodBar.progress,
+                    tagsText = tags.ifBlank { null },
                     coverUri = coverUriStr,
                     audioUri = audioUriStr,
                     videoUri = videoUriStr
@@ -175,7 +173,6 @@ class WriteDiaryFragment : Fragment() {
                 Intent.FLAG_GRANT_READ_URI_PERMISSION
             )
         } catch (_: SecurityException) {
-            // 有的 Uri 不支持持久化权限，忽略即可
         }
     }
 }

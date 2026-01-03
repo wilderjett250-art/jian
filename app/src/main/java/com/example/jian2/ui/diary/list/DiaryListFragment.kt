@@ -14,8 +14,9 @@ import com.example.jian2.R
 import com.example.jian2.ui.diary.DiaryViewModel
 import com.example.jian2.ui.diary.detail.DiaryDetailFragment
 import com.example.jian2.ui.diary.write.WriteDiaryFragment
+import com.example.jian2.ui.search.SearchFragment
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 class DiaryListFragment : Fragment() {
@@ -25,6 +26,7 @@ class DiaryListFragment : Fragment() {
     private lateinit var rvDiary: RecyclerView
     private lateinit var emptyState: LinearLayout
     private lateinit var fabAdd: FloatingActionButton
+    private lateinit var btnGoSearch: MaterialButton
 
     private val adapter by lazy {
         DiaryListAdapter { entity ->
@@ -47,6 +49,7 @@ class DiaryListFragment : Fragment() {
         rvDiary = view.findViewById(R.id.rvDiary)
         emptyState = view.findViewById(R.id.emptyState)
         fabAdd = view.findViewById(R.id.fabAdd)
+        btnGoSearch = view.findViewById(R.id.btnGoSearch)
 
         rvDiary.layoutManager = LinearLayoutManager(requireContext())
         rvDiary.adapter = adapter
@@ -55,6 +58,14 @@ class DiaryListFragment : Fragment() {
             parentFragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, WriteDiaryFragment())
                 .addToBackStack("write")
+                .commit()
+        }
+
+        // ✅ 关键：之前没写这个，所以你点“搜索/筛选”完全没反应
+        btnGoSearch.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, SearchFragment())
+                .addToBackStack("search")
                 .commit()
         }
 

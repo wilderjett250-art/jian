@@ -4,18 +4,15 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageButton
-import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
-import coil.load
 import com.example.jian2.R
 import com.example.jian2.ui.diary.DiaryViewModel
 import com.example.jian2.ui.diary.write.WriteDiaryFragment
 import com.google.android.material.button.MaterialButton
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -39,9 +36,10 @@ class DiaryDetailFragment : Fragment(R.layout.fragment_diary_detail) {
         val tvMeta = view.findViewById<TextView>(R.id.tvMeta)
         val tvContent = view.findViewById<TextView>(R.id.tvContent)
         val tvTags = view.findViewById<TextView>(R.id.tvTags)
-        val ivCover = view.findViewById<ImageView>(R.id.ivCover)
 
         val btnPinned = view.findViewById<ImageButton>(R.id.btnPinned)
+        val btnPin = view.findViewById<MaterialButton>(R.id.btnPin)
+
         val btnEdit = view.findViewById<MaterialButton>(R.id.btnEdit)
         val btnShare = view.findViewById<MaterialButton>(R.id.btnShare)
         val btnDelete = view.findViewById<MaterialButton>(R.id.btnDelete)
@@ -63,6 +61,7 @@ class DiaryDetailFragment : Fragment(R.layout.fragment_diary_detail) {
 
                 tvTitle.text = e.title.ifBlank { "(无标题)" }
                 tvContent.text = e.content
+
                 tvMeta.text = "时间：${sdf.format(Date(e.createdAt))}    心情：${e.mood}/5"
 
                 if (e.tagsText.isBlank()) {
@@ -72,26 +71,23 @@ class DiaryDetailFragment : Fragment(R.layout.fragment_diary_detail) {
                     tvTags.text = "标签：${e.tagsText}"
                 }
 
-                if (e.coverUri.isNullOrBlank()) {
-                    ivCover.visibility = View.GONE
-                } else {
-                    ivCover.visibility = View.VISIBLE
-                    ivCover.load(e.coverUri) { crossfade(true) }
-                }
-
-                // 置顶按钮状态（你实体字段是 isPinned）
+                // 同步两个置顶控件的状态
                 btnPinned.setImageResource(
                     if (e.isPinned) android.R.drawable.btn_star_big_on
                     else android.R.drawable.btn_star_big_off
                 )
+                btnPin.text = if (e.isPinned) "取消置顶" else "置顶"
             }
         }
 
-        btnPinned.setOnClickListener {
-            val e = viewModel.editing.value ?: return@setOnClickListener
+        fun togglePinned() {
+            val e = viewModel.editing.value ?: return
             viewModel.setPinned(e.id, !e.isPinned)
             toast(if (!e.isPinned) "已置顶" else "已取消置顶")
         }
+
+        btnPinned.setOnClickListener { togglePinned() }
+        btnPin.setOnClickListener { togglePinned() }
 
         btnEdit.setOnClickListener {
             parentFragmentManager.beginTransaction()
